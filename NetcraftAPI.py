@@ -43,15 +43,7 @@ class NetcraftAPI(object):
 
         url = "http://searchdns.netcraft.com/?restriction=site+contains&host=*.%s&lookup=wait..&position=limited" % domain
         s = requests.session()
-        s.get('http://searchdns.netcraft.com/')
         req = s.get(url)
-
-        challenge_cookie = req.headers['set-cookie'].split('=')[1].split(';')[0]
-        string = urllib.unquote(challenge_cookie)
-        challenge_cookie_value = hashlib.sha1(string).hexdigest()
-        cookies = {'netcraft_js_verification_response': challenge_cookie_value}
-
-        req = s.get(url, cookies = cookies)
         soup = BeautifulSoup(req.content)
 
         pattern = 'Found (\d+) site'
@@ -66,14 +58,12 @@ class NetcraftAPI(object):
             subdomains = re.findall(pattern, req.content)
             res.extend(subdomains)
             last_result = subdomains[-1]
-            # "Last result: %s" % last_result
 
             for index_page in xrange(1, number_pages):
                 url = "http://searchdns.netcraft.com/?host=*.%s&last=%s.%s&from=%s&restriction=site contains&position=limited" % (domain, last_result, domain, (index_page * 20 + 1))
-                req = s.get(url, cookies = cookies)
+                req = s.get(url)
                 pattern = 'rel="nofollow">([a-z\-\.A-Z0-9]+)<FONT COLOR="#ff0000">'
                 subdomains = re.findall(pattern, req.content)
-                # print req.content
                 res.extend(subdomains)
                 for subdomain in subdomains:
                     self.display_message('[!] Found: %s ' % subdomain)
